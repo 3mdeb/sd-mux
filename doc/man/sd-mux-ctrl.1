@@ -10,7 +10,7 @@ sd-mux-ctrl - control software for sd-mux devices
 .PP
 .B  sd-mux-ctrl [-liuortdspcmvexn?] [-l|--list] [-i|--info] [-u|--status] [-o|--show-serial] [-r|--set-serial=STRING] [-t|--init] [-d|--dut]
 .B [-s|--ts] [-p|--pins=INT] [-c|--tick] [-y|--dyper1=STRING] [-z|--dyper2=STRING] [-m|--tick-time=INT] [-v|--device-id=INT]
-.B [-e|--device-serial=STRING] [-x|--vendor=INT] [-a|--product=INT] [-n|--invert] [-?|--help] [--usage]
+.B [-e|--device-serial=STRING] [-x|--vendor=INT] [-a|--product=INT] [-k|--device-type=STRING] [-n|--invert] [-?|--help] [--usage]
 
 .SH DESCRIPTION
 
@@ -77,6 +77,15 @@ SAMSUNG Electronics Company. Default PRODUCT ID is equal to 0x6001 - the default
 \-a, \-\-product
 .RS 2
 Set PRODUCT ID of devices which are to be used by sd-mux-ctrl. Default value is 0x6001.
+.RE
+
+.PP
+\-k, \-\-device-type
+.RS 2
+Set device type of sd-mux. It can be either "sd-mux" or "sd-wire". This setting is used to distinguish one type
+of SD-MUX from another. "sd-mux" is a type of standard, full-sized SD-MUX board, while "sd-wire" is a type of
+miniaturized version of SD-MUX with functionality reduced to SD card multiplexing only.
+The default value of this setting is "sd-mux".
 .RE
 
 .PP

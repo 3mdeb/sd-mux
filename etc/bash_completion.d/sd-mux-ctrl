@@ -22,7 +22,7 @@ _sdmux()
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="--help --usage --list --device-serial --device-id --show-serial --set-serial --info --status --init --tick --dyper1 --dyper2 --tick-time --dut --ts --vendor --product --pins --invert"
+    opts="--help --usage --list --device-serial --device-id --show-serial --set-serial --info --status --init --tick --dyper1 --dyper2 --tick-time --dut --ts --vendor --product --device-type --pins --invert"
 
     case "${prev}" in
       --device-serial)

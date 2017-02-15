@@ -68,6 +68,7 @@ enum CCOption {
     CCO_Vendor,
     CCO_Product,
     CCO_DyPer,
+    CCO_DeviceType,
     CCO_MAX
 };
 
@@ -207,7 +208,9 @@ int setSerial(char *serialNumber, CCOptionValue options[]) {
         return EXIT_FAILURE;
     }
 
-    f = ftdi_eeprom_initdefaults(ftdi, (char*)"SRPOL", (char *)"sd-mux", serialNumber);
+    char *type = options[CCO_DeviceType].args != NULL ? options[CCO_DeviceType].args : (char *)"sd-mux";
+
+    f = ftdi_eeprom_initdefaults(ftdi, (char *)"SRPOL", type, serialNumber);
     if (f < 0) {
         fprintf(stderr, "Unable to set eeprom strings: %d (%s)\n", f, ftdi_get_error_string(ftdi));
         goto finish_him;
@@ -486,6 +489,8 @@ int parseArguments(int argc, const char **argv, CCCommand *cmd, int *arg, char *
             { "device-id", 'v', POPT_ARG_INT, &options[CCO_DeviceId].argn, 'v', "use device with given id", NULL },
             { "device-serial", 'e', POPT_ARG_STRING, &options[CCO_DeviceSerial].args, 'e',
                     "use device with given serial number", NULL },
+            { "device-type", 'k', POPT_ARG_STRING, &options[CCO_DeviceType].args, 'k',
+                    "make the device of this type", NULL },
             { "vendor", 'x', POPT_ARG_INT, &options[CCO_Vendor].argn, 'x', "use device with given vendor id", NULL },
             { "product", 'a', POPT_ARG_INT, &options[CCO_Product].argn, 'a', "use device with given product id", NULL },
             { "invert", 'n', POPT_ARG_NONE, NULL, 'n', "invert bits for --pins command", NULL },
