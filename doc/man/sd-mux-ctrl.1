@@ -10,7 +10,7 @@ sd-mux-ctrl - control software for sd-mux devices
 .PP
 .B  sd-mux-ctrl [-liuortdspcmvexn?] [-l|--list] [-i|--info] [-u|--status] [-o|--show-serial] [-r|--set-serial=STRING] [-t|--init] [-d|--dut]
 .B [-s|--ts] [-p|--pins=INT] [-c|--tick] [-y|--dyper1=STRING] [-z|--dyper2=STRING] [-m|--tick-time=INT] [-v|--device-id=INT]
-.B [-e|--device-serial=STRING] [-x|--vendor=INT] [-n|--invert] [-?|--help] [--usage]
+.B [-e|--device-serial=STRING] [-x|--vendor=INT] [-a|--product=INT] [-n|--invert] [-?|--help] [--usage]
 
 .SH DESCRIPTION
 
@@ -30,7 +30,7 @@ following actions:
 4. \fBreset\fR connected DUT by power disconnecting and reconnecting after specified timeout
 .RE
 .PP
-After manufacturing, each new sd-mux device has VENDOR ID set to 0x0403 which is the ID of FTDI company on whose chip
+After manufacturing, each new sd-mux device has VENDOR ID set to 0x0403 which is the ID of FTDI company of whose chip
 (FT245RL) the device is based.
 Before first real use, the device should be given a unique serial number.
 To do that \fB--set-serial\fR command must be executed. \fB--set-serial\fR command writes additional information and
@@ -70,7 +70,13 @@ This is the recommended way of addressing devices.
 \-x, \-\-vendor
 .RS 2
 Set VENDOR ID of devices which are to be used by sd-mux-ctrl. Default value is 0x04e8 which is assigned to
-SAMSUNG Electronics Company. DEVICE ID is hard-coded and is equal to 0x6001 - the default FTDI value.
+SAMSUNG Electronics Company. Default PRODUCT ID is equal to 0x6001 - the default FTDI value.
+.RE
+
+.PP
+\-a, \-\-product
+.RS 2
+Set PRODUCT ID of devices which are to be used by sd-mux-ctrl. Default value is 0x6001.
 .RE
 
 .PP
@@ -99,10 +105,10 @@ Print list of command and options and exit.
 .SS \fB\-l, \-\-list\fR
 
 .RS 2
-Print list of all connected sd-mux devices and exit. It takes optional \fB--vendor\fR argument which allows to use
-other VENDOR ID then the default one.
-The default value is 0x04e8 which belongs to SAMSUNG Electronics Company.
-VENDOR ID is used to discover all connected sd-mux devices. This is very important in post production
+Print list of all connected sd-mux devices and exit. It takes optional \fB--vendor --product\fR arguments that allow to use
+other VENDOR and PRODUCT IDs then the default ones.
+The default value is 0x04e8:6001 which belongs to SAMSUNG Electronics Company.
+VENDOR and PRODUCT IDs are used to discover all connected sd-mux devices. This is very important in post production
 (sd-mux device) phase, before first use.
 .RE
 

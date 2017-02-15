@@ -66,6 +66,7 @@ enum CCOption {
     CCO_TickTime,
     CCO_BitsInvert,
     CCO_Vendor,
+    CCO_Product,
     CCO_DyPer,
     CCO_MAX
 };
@@ -91,7 +92,7 @@ int listDevices(CCOptionValue options[]) {
         return EXIT_FAILURE;
     }
 
-    if ((fret = ftdi_usb_find_all(ftdi, &devlist, options[CCO_Vendor].argn, PRODUCT)) < 0) {
+    if ((fret = ftdi_usb_find_all(ftdi, &devlist, options[CCO_Vendor].argn, options[CCO_Product].argn)) < 0) {
         fprintf(stderr, "ftdi_usb_find_all failed: %d (%s)\n", fret, ftdi_get_error_string(ftdi));
         ftdi_free(ftdi);
         return EXIT_FAILURE;
@@ -142,9 +143,9 @@ struct ftdi_context* openDevice(CCOptionValue options[]) {
     }
 
     if (options[CCO_DeviceSerial].args != NULL) {
-        fret = ftdi_usb_open_desc_index(ftdi, options[CCO_Vendor].argn, PRODUCT, NULL, options[CCO_DeviceSerial].args, 0);
+        fret = ftdi_usb_open_desc_index(ftdi, options[CCO_Vendor].argn, options[CCO_Product].argn, NULL, options[CCO_DeviceSerial].args, 0);
     } else {
-        fret = ftdi_usb_open_desc_index(ftdi, options[CCO_Vendor].argn, PRODUCT, NULL, NULL, options[CCO_DeviceId].argn);
+        fret = ftdi_usb_open_desc_index(ftdi, options[CCO_Vendor].argn, options[CCO_Product].argn, NULL, NULL, options[CCO_DeviceId].argn);
     }
     if (fret < 0) {
         fprintf(stderr, "Unable to open ftdi device: %d (%s)\n", fret, ftdi_get_error_string(ftdi));
@@ -213,6 +214,12 @@ int setSerial(char *serialNumber, CCOptionValue options[]) {
     }
 
     f = ftdi_set_eeprom_value(ftdi, VENDOR_ID, SAMSUNG_VENDOR);
+    if (f < 0) {
+        fprintf(stderr, "Unable to set eeprom strings: %d (%s)\n", f, ftdi_get_error_string(ftdi));
+        goto finish_him;
+    }
+
+    f = ftdi_set_eeprom_value(ftdi, PRODUCT_ID, PRODUCT);
     if (f < 0) {
         fprintf(stderr, "Unable to set eeprom strings: %d (%s)\n", f, ftdi_get_error_string(ftdi));
         goto finish_him;
@@ -480,6 +487,7 @@ int parseArguments(int argc, const char **argv, CCCommand *cmd, int *arg, char *
             { "device-serial", 'e', POPT_ARG_STRING, &options[CCO_DeviceSerial].args, 'e',
                     "use device with given serial number", NULL },
             { "vendor", 'x', POPT_ARG_INT, &options[CCO_Vendor].argn, 'x', "use device with given vendor id", NULL },
+            { "product", 'a', POPT_ARG_INT, &options[CCO_Product].argn, 'a', "use device with given product id", NULL },
             { "invert", 'n', POPT_ARG_NONE, NULL, 'n', "invert bits for --pins command", NULL },
             POPT_AUTOHELP
             { NULL, 0, 0, NULL, 0, NULL, NULL }
@@ -558,6 +566,7 @@ int main(int argc, const char **argv) {
     memset(&options, 0, sizeof(options));
     options[CCO_DeviceId].argn = -1;
     options[CCO_Vendor].argn = SAMSUNG_VENDOR;
+    options[CCO_Product].argn = PRODUCT;
 
     if (parseArguments(argc, argv, &cmd, &arg, args, sizeof(args), options) != EXIT_SUCCESS) {
         return EXIT_FAILURE;
