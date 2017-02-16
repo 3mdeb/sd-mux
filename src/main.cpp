@@ -449,7 +449,11 @@ int selectTarget(Target target, CCOptionValue options[]) {
         return EXIT_FAILURE;
 
     if (deviceType == CCDT_SDWIRE) {
-        // TODO: handle target selecting on SDWire device
+        unsigned char pinState = 0x00;
+        pinState |= 0xF0; // Upper half of the byte sets all pins to output (SDWire has only one bit - 0)
+        pinState |= target == T_DUT ? 0x00 : 0x01; // Lower half of the byte sets state of output pins.
+                                                   // In this particular case we care only of bit 0.
+        ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
         goto finish_him;
     }
 
@@ -488,7 +492,8 @@ int setPins(unsigned char pins, CCOptionValue options[]) {
     }
 
     if (deviceType == CCDT_SDWIRE) {
-        // TODO: implement direct pin controlling
+        // SDWire has only one pin already controlled by selectTarget function.
+        // There is no use to repeat this functionality here.
         return EXIT_FAILURE;
     }
 
@@ -509,13 +514,18 @@ int showStatus(CCOptionValue options[]) {
     if (ftdi == NULL)
         return EXIT_FAILURE;
 
-    ftdi_usb_close(ftdi);
-    ftdi_free(ftdi);
 
     if (deviceType == CCDT_SDWIRE) {
-        // TODO: handle status for SDWire
-        return 0;
+       if (ftdi_read_pins(ftdi, &pins) != 0) {
+           fprintf(stderr, "Error reading pins state.\n");
+           return 1;
+       }
+       fprintf(stdout, "SD connected to: %s\n", pins & SOCKET_SEL ? "TS" : "DUT");
+       return 0;
     }
+
+    ftdi_usb_close(ftdi);
+    ftdi_free(ftdi);
 
     // Currently only old SD-MUX is the other device so do the job in its style.
     if (!(pins & POWER_SW_ON && pins & POWER_SW_OFF)) {
