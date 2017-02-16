@@ -39,6 +39,11 @@
 
 #define DELAY_100MS     100000
 
+#define CCDT_SDMUX_STR  "sd-mux"
+#define CCDT_SDWIRE_STR "sd-wire"
+
+#define STRING_SIZE     128
+
 enum CCCommand {
     CCC_List,
     CCC_DUT,
@@ -58,6 +63,12 @@ enum CCCommand {
 enum Target {
     T_DUT,
     T_TS
+};
+
+enum CCDeviceType {
+    CCDT_SDMUX,
+    CCDT_SDWIRE,
+    CCDT_MAX
 };
 
 enum CCOption {
@@ -80,11 +91,22 @@ union CCOptionValue {
 int doPower(bool off, bool on, CCOptionValue options[]);
 int selectTarget(Target target, CCOptionValue options[]);
 
+CCDeviceType getDeviceTypeFromString(char *deviceTypeStr) {
+    if (strcmp(CCDT_SDMUX_STR, deviceTypeStr) == 0) {
+        return CCDT_SDMUX;
+    }
+
+    if (strcmp(CCDT_SDWIRE_STR, deviceTypeStr) == 0) {
+        return CCDT_SDWIRE;
+    }
+
+    return CCDT_MAX;
+}
+
 int listDevices(CCOptionValue options[]) {
     int fret, i;
     struct ftdi_context *ftdi;
     struct ftdi_device_list *devlist, *curdev;
-#define STRING_SIZE 128
     char manufacturer[STRING_SIZE + 1], description[STRING_SIZE + 1], serial[STRING_SIZE + 1];
     int retval = EXIT_SUCCESS;
 
@@ -129,9 +151,11 @@ finish_him:
     return retval;
 }
 
-struct ftdi_context* openDevice(CCOptionValue options[]) {
+struct ftdi_context* openDevice(CCOptionValue options[], CCDeviceType *deviceType) {
     struct ftdi_context *ftdi = NULL;
     int fret;
+    char product[STRING_SIZE + 1];
+    CCDeviceType tmpDeviceType;
 
     if ((options[CCO_DeviceSerial].args == NULL) && (options[CCO_DeviceId].argn < 0)) {
         fprintf(stderr, "No serial number or device id provided!\n");
@@ -150,39 +174,56 @@ struct ftdi_context* openDevice(CCOptionValue options[]) {
     }
     if (fret < 0) {
         fprintf(stderr, "Unable to open ftdi device: %d (%s)\n", fret, ftdi_get_error_string(ftdi));
-        ftdi_free(ftdi);
-        return NULL;
+        goto error;
+    }
+
+    fret = ftdi_read_eeprom(ftdi);
+    if (fret < 0) {
+        fprintf(stderr, "Unable to read ftdi eeprom: %d (%s)\n", fret, ftdi_get_error_string(ftdi));
+        goto error;
+    }
+
+    fret = ftdi_eeprom_decode(ftdi, 0);
+    if (fret < 0) {
+        fprintf(stderr, "Unable to decode ftdi eeprom: %d (%s)\n", fret, ftdi_get_error_string(ftdi));
+        goto error;
+    }
+
+    if (deviceType != NULL) {
+        ftdi_eeprom_get_strings(ftdi, NULL, 0, product, sizeof(product), NULL, 0);
+        tmpDeviceType = getDeviceTypeFromString(product);
+        if (tmpDeviceType == CCDT_MAX) {
+            fprintf(stderr, "Invalid device type. Device probably not configured!\n");
+            goto error;
+        }
+        *deviceType = tmpDeviceType;
     }
 
     return ftdi;
+
+error:
+    ftdi_usb_close(ftdi);
+    ftdi_free(ftdi);
+
+    return NULL;
 }
 
 int showInfo(CCOptionValue options[]) {
     struct ftdi_context *ftdi;
     int fret, ret = EXIT_SUCCESS;
 
-    ftdi = openDevice(options);
+    ftdi = openDevice(options, NULL);
     if (ftdi == NULL) {
         return EXIT_FAILURE;
-    }
-
-    fret = ftdi_read_eeprom(ftdi);
-    if (fret < 0) {
-        fprintf(stderr, "Unable to read ftdi eeprom: %d (%s)\n", fret, ftdi_get_error_string(ftdi));
-        ret = EXIT_FAILURE;
-        goto finish_him;
     }
 
     fret = ftdi_eeprom_decode(ftdi, 1);
     if (fret < 0) {
         fprintf(stderr, "Unable to decode ftdi eeprom: %d (%s)\n", fret, ftdi_get_error_string(ftdi));
         ret = EXIT_FAILURE;
-        goto finish_him;
+        ftdi_usb_close(ftdi);
+        ftdi_free(ftdi);
     }
-
-finish_him:
-    ftdi_usb_close(ftdi);
-    ftdi_free(ftdi);
 
     return ret;
 }
@@ -203,7 +244,7 @@ int setSerial(char *serialNumber, CCOptionValue options[]) {
     struct ftdi_context *ftdi;
     int f, ret = EXIT_FAILURE;
 
-    ftdi = openDevice(options);
+    ftdi = openDevice(options, NULL);
     if (ftdi == NULL) {
         return EXIT_FAILURE;
     }
@@ -226,6 +267,14 @@ int setSerial(char *serialNumber, CCOptionValue options[]) {
     if (f < 0) {
         fprintf(stderr, "Unable to set eeprom strings: %d (%s)\n", f, ftdi_get_error_string(ftdi));
         goto finish_him;
+    }
+
+    if (getDeviceTypeFromString(type) == CCDT_SDWIRE) {
+        f = ftdi_set_eeprom_value(ftdi, CBUS_FUNCTION_0, CBUSH_IOMODE);
+        if (f < 0) {
+            fprintf(stderr, "Unable to set eeprom value: %d (%s)\n", f, ftdi_get_error_string(ftdi));
+            goto finish_him;
+        }
     }
 
     f = ftdi_eeprom_build(ftdi);
@@ -258,13 +307,17 @@ int writePins(struct ftdi_context *ftdi, unsigned char pins) {
     return EXIT_SUCCESS;
 }
 
-struct ftdi_context* prepareDevice(CCOptionValue options[], unsigned char *pins) {
+struct ftdi_context* prepareDevice(CCOptionValue options[], unsigned char *pins, CCDeviceType *deviceType) {
     struct ftdi_context *ftdi;
     int f;
 
-    ftdi = openDevice(options);
+    ftdi = openDevice(options, deviceType);
     if (ftdi == NULL) {
         return NULL;
+    }
+
+    if (*deviceType == CCDT_SDWIRE) {
+        return ftdi; // None of the following steps need to be performed for this type of device.
     }
 
     f = ftdi_set_bitmode(ftdi, 0xFF, BITMODE_BITBANG);
@@ -326,6 +379,7 @@ int powerOn(struct ftdi_context *ftdi, unsigned char *pins) {
 
 int doPower(bool off, bool on, CCOptionValue options[]) {
     unsigned char pins;
+    CCDeviceType deviceType;
     int ret = EXIT_SUCCESS;
 
     int period = 1000;
@@ -333,7 +387,7 @@ int doPower(bool off, bool on, CCOptionValue options[]) {
         period = options[CCO_TickTime].argn;
     }
 
-    struct ftdi_context *ftdi = prepareDevice(options, &pins);
+    struct ftdi_context *ftdi = prepareDevice(options, &pins, &deviceType);
     if (ftdi == NULL)
         return EXIT_FAILURE;
 
@@ -361,9 +415,10 @@ finish_him:
 
 int selectTarget(Target target, CCOptionValue options[]) {
     unsigned char pins;
+    CCDeviceType deviceType;
     int ret = EXIT_SUCCESS;
 
-    struct ftdi_context *ftdi = prepareDevice(options, &pins);
+    struct ftdi_context *ftdi = prepareDevice(options, &pins, &deviceType);
     if (ftdi == NULL)
         return EXIT_FAILURE;
 
@@ -391,7 +446,8 @@ finish_him:
 }
 
 int setPins(unsigned char pins, CCOptionValue options[]) {
-    struct ftdi_context *ftdi = prepareDevice(options, NULL);
+    CCDeviceType deviceType;
+    struct ftdi_context *ftdi = prepareDevice(options, NULL, &deviceType);
     if (ftdi == NULL)
         return EXIT_FAILURE;
 
@@ -411,7 +467,8 @@ int setPins(unsigned char pins, CCOptionValue options[]) {
 
 int showStatus(CCOptionValue options[]) {
     unsigned char pins;
-    struct ftdi_context *ftdi = prepareDevice(options, &pins);
+    CCDeviceType deviceType;
+    struct ftdi_context *ftdi = prepareDevice(options, &pins, &deviceType);
     if (ftdi == NULL)
         return EXIT_FAILURE;
 
@@ -432,18 +489,19 @@ int showStatus(CCOptionValue options[]) {
 int setDyPer(CCCommand cmd, CCOptionValue options[]) {
     unsigned char pins;
     bool switchOn;
+    CCDeviceType deviceType;
     int ret = EXIT_SUCCESS, dyper;
 
-    struct ftdi_context *ftdi = prepareDevice(options, &pins);
+    struct ftdi_context *ftdi = prepareDevice(options, &pins, &deviceType);
     if (ftdi == NULL)
         return EXIT_FAILURE;
 
     #define STRON "ON"
     #define STROFF "OFF"
 
-    if (strncasecmp(STRON, options[CCO_DyPer].args, strlen(STRON)) == 0) {
+    if (strcasecmp(STRON, options[CCO_DyPer].args) == 0) {
       switchOn = true;
-    } else if (strncasecmp(STROFF, options[CCO_DyPer].args, strlen(STROFF)) == 0) {
+    } else if (strcasecmp(STROFF, options[CCO_DyPer].args) == 0) {
       switchOn = false;
     } else {
       fprintf(stderr,"Invalid DyPer argument! Use \"on\" or \"off\".\n");
