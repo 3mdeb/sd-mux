@@ -71,6 +71,14 @@ enum CCDeviceType {
     CCDT_MAX
 };
 
+enum CCFeature {
+    CCF_SDMUX,
+    CCF_POWERSWITCH,
+    CCF_USBMUX,
+    CCF_DYPERS,
+    CCF_MAX
+};
+
 enum CCOption {
     CCO_DeviceId,
     CCO_DeviceSerial,
@@ -101,6 +109,18 @@ CCDeviceType getDeviceTypeFromString(char *deviceTypeStr) {
     }
 
     return CCDT_MAX;
+}
+
+bool hasFeature(CCDeviceType deviceType, CCFeature feature) {
+    static const bool featureMatrix[CCDT_MAX][CCF_MAX] = {
+            {true, true, true, true},           // SD-MUX features
+            {true, false, false, false},        // SDWire features
+    };
+
+    if (deviceType >= CCDT_MAX || feature >= CCF_MAX)
+        return false;
+
+    return featureMatrix[deviceType][feature];
 }
 
 int listDevices(CCOptionValue options[]) {
@@ -391,6 +411,12 @@ int doPower(bool off, bool on, CCOptionValue options[]) {
     if (ftdi == NULL)
         return EXIT_FAILURE;
 
+    if (!hasFeature(deviceType, CCF_POWERSWITCH)) {
+        fprintf(stderr,"Power switching is not available on this device.\n");
+        ret = EXIT_FAILURE;
+        goto finish_him;
+    }
+
     ret = powerOff(ftdi, &pins);
     if (off && (ret != EXIT_SUCCESS)) {
         ret = EXIT_FAILURE;
@@ -422,6 +448,12 @@ int selectTarget(Target target, CCOptionValue options[]) {
     if (ftdi == NULL)
         return EXIT_FAILURE;
 
+    if (deviceType == CCDT_SDWIRE) {
+        // TODO: handle target selecting on SDWire device
+        goto finish_him;
+    }
+
+    // Currently only old SD-MUX is the other device so do the job in its style.
     if (target == T_DUT) {
         pins &= ~(USB_SEL);
         pins &= ~(SOCKET_SEL);
@@ -455,6 +487,11 @@ int setPins(unsigned char pins, CCOptionValue options[]) {
         pins = ~pins;
     }
 
+    if (deviceType == CCDT_SDWIRE) {
+        // TODO: implement direct pin controlling
+        return EXIT_FAILURE;
+    }
+
     printf("Write data: 0x%x\n", pins);
 
     int ret = writePins(ftdi, pins);
@@ -475,6 +512,12 @@ int showStatus(CCOptionValue options[]) {
     ftdi_usb_close(ftdi);
     ftdi_free(ftdi);
 
+    if (deviceType == CCDT_SDWIRE) {
+        // TODO: handle status for SDWire
+        return 0;
+    }
+
+    // Currently only old SD-MUX is the other device so do the job in its style.
     if (!(pins & POWER_SW_ON && pins & POWER_SW_OFF)) {
         fprintf(stdout, "Device not initialized!\n");
         return 0;
@@ -495,6 +538,11 @@ int setDyPer(CCCommand cmd, CCOptionValue options[]) {
     struct ftdi_context *ftdi = prepareDevice(options, &pins, &deviceType);
     if (ftdi == NULL)
         return EXIT_FAILURE;
+
+    if (!hasFeature(deviceType, CCF_DYPERS)) {
+        fprintf(stderr,"DyPers are not available on this device.\n");
+        return EXIT_FAILURE;
+    }
 
     #define STRON "ON"
     #define STROFF "OFF"
