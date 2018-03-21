@@ -2,7 +2,7 @@ Source: sd-mux-ctrl
 Maintainer: Adam Malinowski <a.malinowsk2@partner.samsung.com>
 Section: utils
 Priority: optional
-Build-Depends: libftdi1-dev (>= 1.2),
+Build-Depends: libftdi1-dev (>= 1.4),
                libpopt-dev,
                debhelper (>=9),
                bash-completion,
@@ -10,7 +10,7 @@ Standards-Version: 3.9.5
 
 Package: sd-mux-ctrl
 Architecture: any
-Depends: libftdi1-2 (>=1.2),
+Depends: libftdi1-2 (>=1.4),
          libpopt0,
          ${misc:Depends},
          ${shlibs:Depends},

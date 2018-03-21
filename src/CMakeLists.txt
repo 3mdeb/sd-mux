@@ -20,7 +20,7 @@ FIND_PACKAGE(PkgConfig)
 
 PKG_CHECK_MODULES(SDMUX_DEP
     REQUIRED
-    libftdi1
+    libftdi1>=1.4
     popt
     )
 

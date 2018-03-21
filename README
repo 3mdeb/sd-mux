@@ -5,7 +5,7 @@ This is SD card switcher (multiplexer) designed to help automatic testing.
 This project is sd-mux controller - binary for controlling sd-mux device.
 
 Requirements:
-  1. libftdi1 1.2 - development library
+  1. libftdi1 1.4 - development library
   2. popt - development library
   3. cmake - binary tool
 
