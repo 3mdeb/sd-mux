@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name SDWire-rescue)(type Legacy)(uri ${KIPRJMOD}/SDWire-rescue.lib)(options "")(descr ""))
+  (lib (name SDWire)(type Legacy)(uri ${KIPRJMOD}/SDWire.lib)(options "")(descr ""))
+)
