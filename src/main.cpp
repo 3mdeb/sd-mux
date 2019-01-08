@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016 Samsung Electronics Co., Ltd All Rights Reserved
+ *  Copyright (c) 2016 -2018 Samsung Electronics Co., Ltd All Rights Reserved
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
 #define PRODUCT 0x6001
 #define SAMSUNG_VENDOR 0x04e8
 
+// SDMUX specific definitions
 #define SOCKET_SEL      (0x01 << 0x00)
 #define USB_SEL         (0x01 << 0x03)
 #define POWER_SW_OFF    (0x01 << 0x02)
@@ -37,10 +38,18 @@
 #define DYPER1          (0x01 << 0x05)
 #define DYPER2          (0x01 << 0x06)
 
+// USBMUX specific definitions
+#define UM_SOCKET_SEL	(0x01 << 0x00)
+#define UM_DEVICE_PWR	(0x01 << 0x01)
+#define UM_DUT_LED		(0x01 << 0x02)
+#define UM_GP_LED		(0x01 << 0x03)
+
+
 #define DELAY_100MS     100000
 
 #define CCDT_SDMUX_STR  "sd-mux"
 #define CCDT_SDWIRE_STR "sd-wire"
+#define CCDT_USBMUX_STR "usb-mux"
 
 #define STRING_SIZE     128
 
@@ -68,6 +77,7 @@ enum Target {
 enum CCDeviceType {
     CCDT_SDMUX,
     CCDT_SDWIRE,
+	CCDT_USBMUX,
     CCDT_MAX
 };
 
@@ -108,6 +118,10 @@ CCDeviceType getDeviceTypeFromString(char *deviceTypeStr) {
         return CCDT_SDWIRE;
     }
 
+    if (strcmp(CCDT_USBMUX_STR, deviceTypeStr) == 0) {
+        return CCDT_USBMUX;
+    }
+
     return CCDT_MAX;
 }
 
@@ -115,6 +129,7 @@ bool hasFeature(CCDeviceType deviceType, CCFeature feature) {
     static const bool featureMatrix[CCDT_MAX][CCF_MAX] = {
             {true, true, true, true},           // SD-MUX features
             {true, false, false, false},        // SDWire features
+			{false, false, true, false},        // SDWire features
     };
 
     if (deviceType >= CCDT_MAX || feature >= CCF_MAX)
@@ -297,6 +312,29 @@ int setSerial(char *serialNumber, CCOptionValue options[]) {
         }
     }
 
+    if (getDeviceTypeFromString(type) == CCDT_USBMUX) {
+        f = ftdi_set_eeprom_value(ftdi, CBUS_FUNCTION_0, CBUSH_IOMODE);
+        if (f < 0) {
+            fprintf(stderr, "Unable to set eeprom value: %d (%s)\n", f, ftdi_get_error_string(ftdi));
+            goto finish_him;
+        }
+        f = ftdi_set_eeprom_value(ftdi, CBUS_FUNCTION_1, CBUSH_IOMODE);
+        if (f < 0) {
+            fprintf(stderr, "Unable to set eeprom value: %d (%s)\n", f, ftdi_get_error_string(ftdi));
+            goto finish_him;
+        }
+        f = ftdi_set_eeprom_value(ftdi, CBUS_FUNCTION_2, CBUSH_IOMODE);
+        if (f < 0) {
+            fprintf(stderr, "Unable to set eeprom value: %d (%s)\n", f, ftdi_get_error_string(ftdi));
+            goto finish_him;
+        }
+        f = ftdi_set_eeprom_value(ftdi, CBUS_FUNCTION_3, CBUSH_IOMODE);
+        if (f < 0) {
+            fprintf(stderr, "Unable to set eeprom value: %d (%s)\n", f, ftdi_get_error_string(ftdi));
+            goto finish_him;
+        }
+    }
+
     f = ftdi_eeprom_build(ftdi);
     if (f < 0) {
         fprintf(stderr, "Unable to build eeprom: %d (%s)\n", f, ftdi_get_error_string(ftdi));
@@ -336,7 +374,7 @@ struct ftdi_context* prepareDevice(CCOptionValue options[], unsigned char *pins,
         return NULL;
     }
 
-    if (*deviceType == CCDT_SDWIRE) {
+    if (*deviceType == CCDT_SDWIRE || *deviceType == CCDT_USBMUX) {
         return ftdi; // None of the following steps need to be performed for this type of device.
     }
 
@@ -453,7 +491,37 @@ int selectTarget(Target target, CCOptionValue options[]) {
         pinState |= 0xF0; // Upper half of the byte sets all pins to output (SDWire has only one bit - 0)
         pinState |= target == T_DUT ? 0x00 : 0x01; // Lower half of the byte sets state of output pins.
                                                    // In this particular case we care only of bit 0.
-        ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
+        ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
+        goto finish_him;
+    }
+
+    if (deviceType == CCDT_USBMUX) {
+        unsigned char pinState = 0xF0;
+
+        if (target == T_DUT) {
+            pinState &= ~UM_DEVICE_PWR;
+            ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
+            usleep(DELAY_100MS);
+            pinState |= UM_DEVICE_PWR;
+            ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
+            usleep(DELAY_100MS);
+            pinState |= UM_DUT_LED;
+            pinState &= ~UM_SOCKET_SEL;
+            pinState &= ~UM_GP_LED;
+            ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
+        } else {
+            pinState &= ~UM_DUT_LED;
+            pinState &= ~UM_DEVICE_PWR;
+            ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
+            usleep(DELAY_100MS);
+            pinState |= UM_DEVICE_PWR;
+            ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
+            usleep(DELAY_100MS);
+            pinState |= UM_SOCKET_SEL;
+            pinState |= UM_GP_LED;
+            ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
+        }
+
         goto finish_him;
     }
 
@@ -508,6 +576,7 @@ int setPins(unsigned char pins, CCOptionValue options[]) {
 }
 
 int showStatus(CCOptionValue options[]) {
+	int ret = 0;
     unsigned char pins;
     CCDeviceType deviceType;
     struct ftdi_context *ftdi = prepareDevice(options, &pins, &deviceType);
@@ -518,25 +587,43 @@ int showStatus(CCOptionValue options[]) {
     if (deviceType == CCDT_SDWIRE) {
        if (ftdi_read_pins(ftdi, &pins) != 0) {
            fprintf(stderr, "Error reading pins state.\n");
-           return 1;
+           ret = EXIT_FAILURE;
+           goto finish_him;
        }
        fprintf(stdout, "SD connected to: %s\n", pins & SOCKET_SEL ? "TS" : "DUT");
-       return 0;
+       goto finish_him;
     }
 
-    ftdi_usb_close(ftdi);
-    ftdi_free(ftdi);
+    if (deviceType == CCDT_USBMUX) {
+       if (ftdi_read_pins(ftdi, &pins) != 0) {
+           fprintf(stderr, "Error reading pins state.\n");
+           ret = EXIT_FAILURE;
+           goto finish_him;
+       }
+
+       if (pins == 0xff) {
+           fprintf(stdout, "Device not initialized!\n");
+           goto finish_him;
+       }
+
+       fprintf(stdout, "SD connected to: %s\n", pins & UM_SOCKET_SEL ? "TS" : "DUT");
+       goto finish_him;
+    }
 
     // Currently only old SD-MUX is the other device so do the job in its style.
-    if (!(pins & POWER_SW_ON && pins & POWER_SW_OFF)) {
+    if (!((pins & POWER_SW_ON) && (pins & POWER_SW_OFF))) {
         fprintf(stdout, "Device not initialized!\n");
-        return 0;
+        goto finish_him;
     }
 
     fprintf(stdout, "USB connected to: %s\n", pins & USB_SEL ? "TS" : "DUT");
     fprintf(stdout, "SD connected to: %s\n", pins & SOCKET_SEL ? "TS" : "DUT");
 
-    return 0;
+finish_him:
+    ftdi_usb_close(ftdi);
+    ftdi_free(ftdi);
+
+    return ret;
 }
 
 int setDyPer(CCCommand cmd, CCOptionValue options[]) {
