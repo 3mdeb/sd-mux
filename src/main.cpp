@@ -672,7 +672,7 @@ finish_him:
 
 int parseArguments(int argc, const char **argv, CCCommand *cmd, int *arg, char *args, size_t argsLen,
                    CCOptionValue options[]) {
-    char c;
+    int c;
     char *serial = NULL;
 
     poptContext optCon;
