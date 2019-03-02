@@ -278,13 +278,17 @@ int doInit(CCOptionValue options[]) {
 int setSerial(char *serialNumber, CCOptionValue options[]) {
     struct ftdi_context *ftdi;
     int f, ret = EXIT_FAILURE;
+    char *type = options[CCO_DeviceType].args;
+
+    if (!type) {
+        fprintf(stderr, "Device type not specified\n");
+        return EXIT_FAILURE;
+    }
 
     ftdi = openDevice(options, NULL);
     if (ftdi == NULL) {
         return EXIT_FAILURE;
     }
-
-    char *type = options[CCO_DeviceType].args != NULL ? options[CCO_DeviceType].args : (char *)"sd-mux";
 
     f = ftdi_eeprom_initdefaults(ftdi, (char *)"SRPOL", type, serialNumber);
     if (f < 0) {
