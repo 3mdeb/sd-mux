@@ -709,6 +709,7 @@ int parseArguments(int argc, const char **argv, CCCommand *cmd, int *arg, char *
     poptSetOtherOptionHelp(optCon, "command");
     if (argc < 2) {
         poptPrintUsage(optCon, stderr, 0);
+        poptFreeContext(optCon);
         return EXIT_SUCCESS;
     }
     /* Now do options processing, get portname */
@@ -756,16 +757,17 @@ int parseArguments(int argc, const char **argv, CCCommand *cmd, int *arg, char *
         }
     }
 
-    poptFreeContext(optCon);
-
     if (serial)
         snprintf(args, argsLen, "%s", serial);
     free(serial);
 
     if (c < -1) {
         fprintf(stderr, "%s: %s\n", poptBadOption(optCon, POPT_BADOPTION_NOALIAS), poptStrerror(c));
+        poptFreeContext(optCon);
         return EXIT_FAILURE;
     }
+
+    poptFreeContext(optCon);
 
     return EXIT_SUCCESS;
 }
