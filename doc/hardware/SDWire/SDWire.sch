@@ -1,12 +1,13 @@
-EESchema Schematic File Version 4
-EELAYER 26 0
+EESchema Schematic File Version 5
+LIBS:SDWire-cache
+EELAYER 29 0
 EELAYER END
 $Descr A3 16535 11693
 encoding utf-8
 Sheet 1 1
 Title "MuxPi"
-Date "2018-06-13"
-Rev "1.3"
+Date "2019-05-12"
+Rev "1.4"
 Comp "SRPOL"
 Comment1 "Author: Adam Malinowski <a.malinowsk2@partner.samsung.com>"
 Comment2 "Copyright (c) 2016 Samsung Electronics Co., Ltd All Rights Reserved"
@@ -856,8 +857,6 @@ Text Label 7600 4950 2    60   ~ 0
 CLK_TS
 Text Label 7600 5500 2    60   ~ 0
 ~CD_TS
-NoConn ~ 4750 5200
-NoConn ~ 4750 5300
 NoConn ~ 6700 3300
 NoConn ~ 6700 3400
 Text Label 10800 6200 0    60   ~ 0
@@ -2125,4 +2124,123 @@ Wire Wire Line
 	9660 3900 11800 3900
 Wire Wire Line
 	10860 2850 11800 2850
+$Comp
+L MuxPi:AT24CS02-SSHM U6
+U 1 1 5CD3BDFB
+P 3800 5150
+F 0 "U6" H 3300 5531 50  0000 C CNN
+F 1 "AT24CS02-SSHM" H 3400 5440 50  0000 C CNN
+F 2 "Package_SO:SO-8_3.9x4.9mm_P1.27mm" H 3800 5150 50  0001 C CIN
+F 3 "" H 3800 5150 50  0001 C CNN
+	1    3800 5150
+	1    0    0    -1  
+$EndComp
+$Comp
+L SDWire:GND #PWR015
+U 1 1 5CD3DAB0
+P 3800 5650
+F 0 "#PWR015" H 3800 5400 50  0001 C CNN
+F 1 "GND" H 3800 5500 50  0000 C CNN
+F 2 "" H 3800 5650 60  0000 C CNN
+F 3 "" H 3800 5650 60  0000 C CNN
+	1    3800 5650
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	3800 4800 3800 4550
+Wire Wire Line
+	3800 5550 3800 5600
+Wire Wire Line
+	4200 5200 4450 5200
+Wire Wire Line
+	4200 5050 4250 5050
+Wire Wire Line
+	4550 5050 4550 5300
+Wire Wire Line
+	4550 5300 4750 5300
+Wire Wire Line
+	3800 5600 3300 5600
+Wire Wire Line
+	3300 5600 3300 5350
+Wire Wire Line
+	3300 5000 3400 5000
+Connection ~ 3800 5600
+Wire Wire Line
+	3800 5600 3800 5650
+Wire Wire Line
+	3400 5100 3300 5100
+Connection ~ 3300 5100
+Wire Wire Line
+	3300 5100 3300 5000
+Wire Wire Line
+	3400 5200 3300 5200
+Connection ~ 3300 5200
+Wire Wire Line
+	3300 5200 3300 5100
+Wire Wire Line
+	3400 5350 3300 5350
+Connection ~ 3300 5350
+Wire Wire Line
+	3300 5350 3300 5200
+$Comp
+L SDWire:R R16
+U 1 1 5CD42A3D
+P 4450 4800
+F 0 "R16" H 4550 4950 50  0000 C CNN
+F 1 "10K" V 4550 4800 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 4380 4800 30  0001 C CNN
+F 3 "http://www.tme.eu/pl/Document/f9483914239ddfe8619d910f45cc0572/crcw0402_dbc.pdf" H 4450 4800 30  0001 C CNN
+F 4 "http://www.tme.eu/pl/details/crcw040210k0jntdbc/rezystory-smd-0402/vishay/" V 4450 4800 60  0001 C CNN "Shop link"
+F 5 "CRCW040210K0JNTDBC" H 4450 4800 60  0001 C CNN "Symbol"
+F 6 "0.01897" H 4450 4800 60  0001 C CNN "Price"
+	1    4450 4800
+	1    0    0    -1  
+$EndComp
+$Comp
+L SDWire:R R8
+U 1 1 5CD42F84
+P 4250 4800
+F 0 "R8" H 4350 4950 50  0000 C CNN
+F 1 "10K" V 4350 4800 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 4180 4800 30  0001 C CNN
+F 3 "http://www.tme.eu/pl/Document/f9483914239ddfe8619d910f45cc0572/crcw0402_dbc.pdf" H 4250 4800 30  0001 C CNN
+F 4 "http://www.tme.eu/pl/details/crcw040210k0jntdbc/rezystory-smd-0402/vishay/" V 4250 4800 60  0001 C CNN "Shop link"
+F 5 "CRCW040210K0JNTDBC" H 4250 4800 60  0001 C CNN "Symbol"
+F 6 "0.01897" H 4250 4800 60  0001 C CNN "Price"
+	1    4250 4800
+	1    0    0    -1  
+$EndComp
+$Comp
+L SDWire:+3V3 #PWR014
+U 1 1 5CD3D659
+P 3800 4500
+F 0 "#PWR014" H 3800 4350 50  0001 C CNN
+F 1 "+3V3" H 3815 4673 50  0000 C CNN
+F 2 "" H 3800 4500 50  0000 C CNN
+F 3 "" H 3800 4500 50  0000 C CNN
+	1    3800 4500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4450 4650 4450 4550
+Wire Wire Line
+	4450 4550 4250 4550
+Connection ~ 3800 4550
+Wire Wire Line
+	3800 4550 3800 4500
+Wire Wire Line
+	4250 4650 4250 4550
+Connection ~ 4250 4550
+Wire Wire Line
+	4250 4550 3800 4550
+Wire Wire Line
+	4250 4950 4250 5050
+Connection ~ 4250 5050
+Wire Wire Line
+	4250 5050 4550 5050
+Wire Wire Line
+	4450 4950 4450 5200
+Connection ~ 4450 5200
+Wire Wire Line
+	4450 5200 4750 5200
 $EndSCHEMATC
