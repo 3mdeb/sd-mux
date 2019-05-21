@@ -9,7 +9,7 @@ Build-Depends:
  libftdi1-dev (>= 1.4),
  libpopt-dev,
  pkg-config
-Standards-Version: 3.9.5
+Standards-Version: 4.1.4
 
 Package: sd-mux-ctrl
 Architecture: any
