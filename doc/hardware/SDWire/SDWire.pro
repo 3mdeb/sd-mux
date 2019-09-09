@@ -1,4 +1,4 @@
-update=2018-06-13 10:06:47
+update=Thu 05 Sep 2019 09:41:36 AM CEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -37,4 +37,10 @@ SubpartFirstId=65
 NetFmtName=
 SpiceAjustPassiveValues=0
 LabSize=60
+ERC_WriteFile=0
 ERC_TestSimilarLabels=1
+ERC_CheckUniqueGlobalLabels=1
+ERC_CheckBusDriverConflicts=1
+ERC_CheckBusEntryConflicts=1
+ERC_CheckBusToBusConflicts=1
+ERC_CheckBusToNetConflicts=1
