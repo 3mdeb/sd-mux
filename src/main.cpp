@@ -46,6 +46,7 @@
 
 
 #define DELAY_100MS     100000
+#define DELAY_500MS     500000
 
 #define CCDT_SDMUX_STR  "sd-mux"
 #define CCDT_SDWIRE_STR "sd-wire"
@@ -505,7 +506,7 @@ int selectTarget(Target target, CCOptionValue options[]) {
         if (target == T_DUT) {
             pinState &= ~UM_DEVICE_PWR;
             ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
-            usleep(DELAY_100MS);
+            usleep(DELAY_500MS);
             pinState |= UM_DEVICE_PWR;
             ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
             usleep(DELAY_100MS);
@@ -517,7 +518,7 @@ int selectTarget(Target target, CCOptionValue options[]) {
             pinState &= ~UM_DUT_LED;
             pinState &= ~UM_DEVICE_PWR;
             ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
-            usleep(DELAY_100MS);
+            usleep(DELAY_500MS);
             pinState |= UM_DEVICE_PWR;
             ret |= ftdi_set_bitmode(ftdi, pinState, BITMODE_CBUS);
             usleep(DELAY_100MS);
